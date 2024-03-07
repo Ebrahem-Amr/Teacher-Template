@@ -16,6 +16,7 @@ class Section extends Model
         'notes',
         'group',
         'admin_id',
+        'fees',
     ];
 
     public function admin()
@@ -25,5 +26,32 @@ class Section extends Model
     public function students()
     {
         return $this->hasMany(Student::class);
+    }
+
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::created(function ($section) {
+            $section->createHistoryRecord('created');
+        });
+
+        static::updated(function ($section) {
+            $section->createHistoryRecord('updated');
+        });
+
+        static::deleted(function ($section) {
+            $section->createHistoryRecord('deleted');
+        });
+    }
+
+    public function createHistoryRecord($action)
+    {
+        History::create([
+            'model_id' => $this->id,
+            'action'   => $action,
+            'data'     => $this->toJson(),
+        ]);
     }
 }

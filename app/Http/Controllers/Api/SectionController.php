@@ -13,20 +13,19 @@ class SectionController extends Controller
 {
     //
     public function __construct() {
-        $this->middleware('jwt.verify', ['except' => ['index']]);
+        $this->middleware('jwt.verify');
     }
 
-    public function index(){
-        $section=Section::Get();
-        return response()->json($section);
-    }
+    // public function index(){
+    //     $section=Section::Get();
+    //     return response()->json($section);
+    // }
 
     public function create(Request $request) {
-
-        // الحصول على ID الadmin الحالي
+        // Get the current admin ID
         $adminId = Auth::id();
 
-        // إضافة 'admin_id' وتعيينها إلى ID الadmin الحالي
+        // Add 'admin_id' and set it to the current admin ID
         $request->merge(['admin_id' => $adminId]);
 
         $validator = Validator::make($request->all(), [
@@ -51,7 +50,7 @@ class SectionController extends Controller
     }
 
     public function all_section(){
-        // الحصول على ID الadmin الحالي
+        // Get the current admin ID
         $adminId = Auth::id();
 
         $admin = Admin::find($adminId);
@@ -62,59 +61,59 @@ class SectionController extends Controller
 
     public function delete_section($id){
         $sectionId = $id;
-        // الحصول على ID الadmin الحالي
+        // Get the current admin ID
         $adminId = Auth::id();
-
-        // الحصول على موديل المدير
+    
+        // Get the admin model
         $admin = Admin::find($adminId);
-
-        // الحصول على موديل القسم المعين
+    
+        // Get the model of the specified department
         $section = Section::find($sectionId);
-
-        // التحقق من وجود القسم
+    
+        // Check the existence of the department
         if (!$section) {
             return response()->json([
                 'error' => 'Section not found'
             ], 404);
         }
-
-        // التحقق مما إذا كان القسم ينتمي إلى المدير
+    
+        // Check if the section belongs to the admin
         if ($section->admin_id != $admin->id) {
             return response()->json([
                 'message' => 'Unauthorized action'
             ], 403);
         }
-
-        // حذف section
+    
+        // Delete section
         $section->delete();
-
+    
         return response()->json([
             'message' => 'Section deleted successfully'
         ], 201);
     }
+    
 
-    public function update_section($id , Request $request){
+    public function update_section($id, Request $request){
         $sectionId = $id;
-        // الحصول على ID الadmin الحالي
+        // Get the current admin ID
         $adminId = Auth::id();
-
-        // البحث عن المدير
+    
+        // Find the admin
         $admin = Admin::find($adminId);
-
-        // البحث عن القسم
+    
+        // Find the section
         $section = Section::find($sectionId);
-
-        // التحقق من وجود القسم
+    
+        // Check the existence of the section
         if (!$section) {
             return response()->json(['error' => 'Section not found']);
         }
-
-        // التحقق مما إذا كان القسم ينتمي إلى المدير
+    
+        // Check if the section belongs to the admin
         if ($section->admin_id != $admin->id) {
             return response()->json(['message' => 'Unauthorized action']);
         }
-
-
+    
         $validator = Validator::make($request->all(), [
             'days' => 'required|string',
             'time_period' => 'required|string',
@@ -122,16 +121,131 @@ class SectionController extends Controller
             'notes' => 'required|string',
             'group' => 'required|string',
         ]);
+    
         if($validator->fails()){
             return response()->json($validator->errors()->toJson(), 400);
         }    
-
-        // تحديث القسم باستخدام البيانات الجديدة
+    
+        // Update the section with the new data
         $section->update($validator->validated());
-
+    
         return response()->json([
             'message' => 'Section updated successfully',
             'section' => $section
         ]);
     }
+    
+    public function groups_of_admin(){
+        // Get the current admin ID
+        $adminId = Auth::id();
+
+        $admin = Admin::find($adminId);
+        
+        $uniqueGroups = $admin->sections()->distinct()->pluck('group');
+
+        return response()->json($uniqueGroups);
+    }
+
+    public function fees($id, Request $request){
+
+        // $jsonString1 = '{"2": {"100": ["3", "4"]}}';
+        // $jsonString2 = '{"2": {"100": ["5", "6"]}}';
+
+        // // تحويل JSON إلى مصفوفات PHP
+        // $array1 = json_decode($jsonString1, true);
+        // $array2 = json_decode($jsonString2, true);
+
+        // // foreach ($array2 as $key => &$value) {
+        // //     // return $value;
+        // //     $array1[$key] = $value;
+        // // }
+        // // return $array1;
+
+        // // دمج المصفوفات بشكل متكامل
+        // $mergedArray = array_merge_recursive_distinct($array1, $array2);
+
+        // // تحويل المصفوفة المدمجة إلى JSON
+        // $mergedJsonString = json_encode($mergedArray);
+
+        // return compact('array1', 'array2','mergedArray');
+
+
+        // return $mergedArray;
+
+
+
+
+
+
+
+
+        //////////////////////////////////////////////////////
+        $sectionId = $id;
+        // Get the current admin ID
+        $adminId = Auth::id();
+    
+        // Find the admin
+        $admin = Admin::find($adminId);
+    
+        // Find the section
+        $section = Section::find($sectionId);
+    
+        // Check the existence of the section
+        if (!$section) {
+            return response()->json(['error' => 'Section not found']);
+        }
+    
+        // Check if the section belongs to the admin
+        if ($section->admin_id != $admin->id) {
+            return response()->json(['message' => 'Unauthorized action']);
+        }
+
+        $array1 = json_decode($section->fees, true);
+        $array2 = $request->fees;
+
+
+        $validator = Validator::make($request->all(), [
+            'fees' => 'required',
+        ]);
+
+        if($validator->fails()){
+            return response()->json($validator->errors()->toJson(), 400);
+        }
+
+        if ($array1==null) {
+            $array1=$array2;
+        }
+        else {
+            foreach ($array2 as $key => $values) {
+                if (array_key_exists($key, $array1)) {    
+                    foreach ($values as $subKey => $subValues) {
+                        if (array_key_exists($subKey, $array1[$key])) {
+                            return response()->json([
+                                'message' => ' This student has already paid the fees ',
+                                'id'=>$subKey,
+                            ]);
+                        } else {
+                            $array1[$key][$subKey] = $subValues;
+                        }
+                    }
+                } else {
+                    $array1[$key] = $values;    
+                }
+            }
+        }
+        $section->fees = $array1;
+        
+
+        $section->save();    
+        return response()->json([
+            'message' => ' successfully ',
+            'fees' => $section->fees
+        ]);
+
+
+
+    }
+
+
+    
 }

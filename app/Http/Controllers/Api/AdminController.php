@@ -16,15 +16,15 @@ class AdminController extends Controller
      * @return void
      */
     public function __construct() {
-        $this->middleware('jwt.verify', ['except' => ['login', 'register','index']]);
+        $this->middleware('jwt.verify', ['except' => ['login', 'register']]);
     }
 
 
-    public function index(){
-        $admin=Admin::Get();
-        return response()->json($admin);
+    // public function index(){
+    //     $admin=Admin::Get();
+    //     return response()->json($admin);
 
-    }
+    // }
 
 
    
@@ -88,8 +88,7 @@ class AdminController extends Controller
         return response()->json([
             'user' => auth()->user()->name,
             'token' => $token,
-            // 'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60,
+            'expires_in' => auth()->factory()->getTTL() * 60 ,
             
         ]);
     }
